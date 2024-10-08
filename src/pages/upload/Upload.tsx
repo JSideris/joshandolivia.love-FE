@@ -50,11 +50,91 @@ const Upload: React.FC = () => {
 	const [isVideoViewerOpen, setIsVideoViewerOpen] = useState(false);
 	const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
+	const GET_S3_FS = "https://2fiucgicl8.execute-api.us-east-2.amazonaws.com/get-s3-fs";
+
 	useEffect(() => {
 		const initDb = async () => {
 
 			let fs = new IndexedDbFilesystem(uploadProgress);
 			setFs(fs);
+
+			await fs.wipeDb();
+
+			{ // Also load whatever is in s3, and update the local db.
+				let response = await fetch(GET_S3_FS, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json"
+					},
+					body: JSON.stringify({ 
+						guestId: guestId
+					})
+				});
+
+				let data = await response.json();
+
+				let keys = data?.keys || [];
+				let fileKeyHash = {};
+				let thumbnailKeyHash = {};
+				let compressedKeyHash = {};
+				let directoriesHash = {};
+
+				for (let i = 0; i < keys.length; i++) {
+					keys[i] = keys[i].substring(`uploads/${guestId}/`.length);
+					let key = keys[i];
+					if(key.startsWith("files/")){
+						key = key.substring("files".length);
+						fileKeyHash[key] = true;
+
+						let keyPathParts = key.split("/");
+						keyPathParts.pop(); // Remove the file name
+						keyPathParts.shift(); // Remove starting /
+						
+						let constructedPath = "";
+						for(let j = 0; j < keyPathParts.length; j++){
+							let pathPart = keyPathParts[j];
+							if(pathPart.length){
+								constructedPath = constructedPath + "/" + pathPart;
+								directoriesHash[constructedPath] = true;
+								// console.log("Added", constructedPath);
+							}
+						}
+					}
+					else if(key.startsWith("compressed/")){
+						key = key.substring("compressed".length);
+						compressedKeyHash[key] = true;
+					}
+					else if(key.startsWith("thumbnails/")){
+						key = key.substring("thumbnails".length);
+						thumbnailKeyHash[key] = true;
+					}
+				}
+
+				// For each directory, make sure all the directories exist in our local db.
+
+				let directories = Object.keys(directoriesHash);
+				for(let i = 0; i < directories.length; i++){
+					let path = directories[i];
+					if(!await fs.exists(path)){
+						await fs.createDirectory(path);
+					}
+				}
+
+				// Add all the files that don't exist locally.
+
+				let files = Object.keys(fileKeyHash);
+				for(let i = 0; i < files.length; i++){
+					let fullFilePath = files[i];
+					// console.log("File:", fullFilePath);
+					let fileName = fullFilePath.split("/").pop();
+					let filePath = fullFilePath.split("/").slice(0, -1).join("/").substring(1) + "/";
+					// console.log("Create", filePath, fileName);
+					await fs.createFileRecord(filePath, fileName, 0, !!thumbnailKeyHash[fullFilePath])
+				}
+
+				// let allFileKeys = Object.keys(fileKeyHash);
+
+			}
 
 			loadDirectory(fs, "/"); // Load root directory (parentDirectoryId is null for root)
 		};

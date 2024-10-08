@@ -108,7 +108,7 @@ class IndexedDbFilesystem implements IFilesystem {
 		});
 	}
 
-	private async createFileRecord(path: string, name: string, size: number, hasThumbnail: boolean): Promise<void> {
+	async createFileRecord(path: string, name: string, size: number, hasThumbnail: boolean): Promise<void> {
 		if(await this.exists("/"+path+name)){
 			console.log(`Warning: File already exists at path: ${"/"+path+name}.`);
 			await this.deleteFile("/"+path+name);
@@ -224,6 +224,17 @@ class IndexedDbFilesystem implements IFilesystem {
 				addRequest.onerror = () => reject(addRequest.error);
 			};
 			deleteRequest.onerror = () => reject(deleteRequest.error);
+		});
+	}
+
+	async wipeDb(){
+		const db = await this.openDB();
+		return new Promise<void>((resolve, reject) => {
+			const transaction = db.transaction(this.storeName, 'readwrite');
+			const store = transaction.objectStore(this.storeName);
+			const request = store.clear();
+			request.onsuccess = () => resolve();
+			request.onerror = () => reject(request.error);
 		});
 	}
 }
