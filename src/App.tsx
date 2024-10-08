@@ -37,22 +37,25 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <div className={isMobile ? 'mobile-content' : 'desktop-content'}>
-      <div className="blur"></div>
-      <div className="contents">
-        <HashRouter>
-          <Routes>
-            {/* Define routes */}
-            <Route path="/" element={
-              <Home />
-            } />
-            <Route path="/upload/:guestId" element={
-              <Upload />
-            } />
-          </Routes>
-        </HashRouter>
+    <>
+
+      <div className={isMobile ? 'mobile-content' : 'desktop-content'}>
+        <div className="blur"></div>
+        <div className="contents">
+          <HashRouter>
+            <Routes>
+              {/* Define routes */}
+              <Route path="/" element={
+                <Home />
+              } />
+              <Route path="/upload/:guestId" element={
+                <Upload />
+              } />
+            </Routes>
+          </HashRouter>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
