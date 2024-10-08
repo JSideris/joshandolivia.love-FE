@@ -51,6 +51,7 @@ const Upload: React.FC = () => {
 	const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
 	const GET_S3_FS = "https://2fiucgicl8.execute-api.us-east-2.amazonaws.com/get-s3-fs";
+	const DELETE_S3_FILE = "https://2fiucgicl8.execute-api.us-east-2.amazonaws.com/delete-s3-file";
 
 	useEffect(() => {
 		const initDb = async () => {
@@ -283,6 +284,17 @@ const Upload: React.FC = () => {
 		else {
 			console.log(`Deleting ${path}.`);
 			await fs.deleteFile(item.path);
+
+			await fetch(DELETE_S3_FILE, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify({
+					guestId: guestId,
+					relativeKey: item.path
+				})
+			});
 		}
 
 		loadDirectory(fs, currentPath);

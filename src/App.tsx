@@ -21,6 +21,21 @@ const App: React.FC = () => {
     };
   }, []);
 
+  function getQueryParam(name) {
+    const params = new URLSearchParams(window.location.search);
+    return params.get(name);
+  }
+
+  useEffect(() => {
+    // Get the `route` query param
+    const route = getQueryParam('route');
+
+    if (route) {
+      // If a route query parameter is present, redirect to the hash route
+      window.location.href = `#${route}`;
+    }
+  }, []);
+
   return (
     <div className={isMobile ? 'mobile-content' : 'desktop-content'}>
       <div className="blur"></div>
