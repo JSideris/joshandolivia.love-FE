@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './App.css';
 import Home from './pages/home/Home';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { HashRouter, Route, Routes } from 'react-router-dom';
 import Upload from './pages/upload/Upload';
 
 const App: React.FC = () => {
@@ -25,7 +25,7 @@ const App: React.FC = () => {
     <div className={isMobile ? 'mobile-content' : 'desktop-content'}>
       <div className="blur"></div>
       <div className="contents">
-        <BrowserRouter>
+        <HashRouter>
           <Routes>
             {/* Define routes */}
             <Route path="/" element={
@@ -35,7 +35,7 @@ const App: React.FC = () => {
               <Upload />
             } />
           </Routes>
-        </BrowserRouter>
+        </HashRouter>
       </div>
     </div>
   );
