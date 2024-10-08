@@ -33,7 +33,7 @@ class IndexedDbFilesystem implements IFilesystem {
 		file: File,
 		path: string
 	}[]): Promise<void> {
-		let userId = window.location.pathname.split("/").pop();
+		let userId = window.location.hash.split("/").pop() || window.location.pathname.split("/").pop() || "anonymous";
 
 		{ // Create the directories related to the files.
 
