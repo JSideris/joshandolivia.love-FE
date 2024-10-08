@@ -130,7 +130,7 @@ const Upload: React.FC = () => {
 					let fileName = fullFilePath.split("/").pop();
 					let filePath = fullFilePath.split("/").slice(0, -1).join("/").substring(1) + "/";
 					if(filePath == "/")	filePath = "";
-					console.log("Create", filePath, fileName);
+					// console.log("Create", filePath, fileName);
 					await fs.createFileRecord(filePath, fileName, 0, !!thumbnailKeyHash[fullFilePath])
 				}
 
