@@ -1,0 +1,34 @@
+.filedrop-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: rgba(255, 255, 255, 0.5);
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	backdrop-filter: blur(4px);
+	z-index: 9999;
+}
+
+.filedrop-overlay p {
+	font-size: 72px;
+	color: black;
+}
+
+.stylistic-filedrop-bg {
+	position: fixed;
+	left: 80px;
+	right: 80px;
+	top: 80px;
+	bottom: 80px;
+	border: 12px dashed rgb(66, 66, 66);
+	border-radius: 100px;
+}
+
+.filedrop-overlay.hidden {
+	display:none;
+	pointer-events: none;
+}

@@ -1,26 +1,44 @@
-import React from 'react';
-import logo from './logo.svg';
+import React, { useEffect, useState } from 'react';
 import './App.css';
+import Home from './pages/home/Home';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import Upload from './pages/upload/Upload';
 
-function App() {
+const App: React.FC = () => {
+  const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth <= 768);
+
+  // This will handle resizing dynamically (optional)
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup event listener on component unmount
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className={isMobile ? 'mobile-content' : 'desktop-content'}>
+      <div className="blur"></div>
+      <div className="contents">
+        <BrowserRouter>
+          <Routes>
+            {/* Define routes */}
+            <Route path="/" element={
+              <Home />
+            } />
+            <Route path="/upload/:guestId" element={
+              <Upload />
+            } />
+          </Routes>
+        </BrowserRouter>
+      </div>
     </div>
   );
-}
+};
 
 export default App;

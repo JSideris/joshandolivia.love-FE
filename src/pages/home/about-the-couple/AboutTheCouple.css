@@ -1,0 +1,22 @@
+.section-container-atc {
+	width: 100%;
+  }
+  
+  .overlay-atc {
+	background-color: rgba(0, 0, 0, 0.3);
+	padding: 20px;
+  }
+  
+  .overlay-atc h1 {
+	font-size: 2.5em;
+	color: white;
+	margin: 0;
+  }
+  
+  .overlay-atc img {
+	width: 200px;
+	height: 200px;
+	border-radius: 100px;
+	float: right;
+  }
+  

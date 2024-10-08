@@ -1,0 +1,40 @@
+
+
+.file-grid{
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); /* Each icon gets at least 120px, but the number of columns adapts */
+	grid-gap: 20px; /* Space between each icon */
+	justify-items: center; /* Centers each FileIcon within its grid cell */
+	padding: 20px; /* Padding around the grid */
+	user-select: none;
+}
+
+.fs-btn{
+	background-color: #e0c91dA0;
+	border: none;
+	/* filter: invert(1); */
+	cursor: pointer;
+	margin-right: 4px;
+}
+
+.fs-btn:hover{
+	background-color: #e0c91d;
+}
+
+.breadcrumb {
+	margin: 20px 0;
+	font-size: 16px;
+}
+
+.breadcrumb-item {
+	cursor: pointer;
+	text-decoration: underline;
+}
+
+.breadcrumb-divider{
+	margin: 0 10px;
+}
+
+/* .empty-folder-message{
+	width: 100%;
+} */

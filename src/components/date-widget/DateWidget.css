@@ -1,0 +1,29 @@
+.date-widget-table {
+	width: auto;
+	margin-left: 0;
+	margin-right: 0;
+	border-collapse: collapse;
+	text-align: center;
+  }
+  
+  .date-widget-table td {
+	padding: 16px;
+  }
+  
+  .td1 {
+	font-size: 24px;
+	color: #ddd;
+	border-right: 3px solid #eb3;
+  }
+  
+  .td2 {
+	font-size: 42px;
+	color: #eee;
+	border-right: 3px solid #eb3;
+  }
+  
+  .td3 {
+	font-size: 24px;
+	color: #ddd;
+  }
+  

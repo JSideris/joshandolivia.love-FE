@@ -1,0 +1,46 @@
+.file-icon {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: flex-start;
+	cursor: pointer;
+	padding: 10px;
+	border-radius: 5px;
+	transition: background-color 0.2s ease;
+}
+
+.file-icon img {
+	border-radius: 5px;
+	object-fit: contain;
+}
+
+.file-icon .file-label {
+	display: inline-block;
+	margin-top: 4px;
+	text-align: center;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 100%;
+	/* user-select: all; */
+}
+
+.file-icon.selected .file-label {
+	white-space: normal;
+	overflow: visible;
+	z-index: 10;
+	max-width: none;
+
+	white-space: normal;
+	/* Allow wrapping */
+	word-break: break-all;
+	/* Forces long strings to break */
+	overflow-wrap: break-word;
+	/* Allows breaks within long words */
+}
+
+.file-icon.selected {
+	background-color: #e0e4f130;
+	/* border: 2px solid #007bff; */
+	box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
