@@ -19,11 +19,17 @@ import { IFileMetadata } from "../../scripts/filesystem/i-filesystem";
 import PhotoViewer from "../../components/photo-viewer/PhotoViewer";
 import { CLOUDFRONT_URL, imageFileTypes, videoFileFormats } from "../../scripts/constants";
 import VideoViewer from "../../components/video-viewer/VideoViewer";
+import UPLOAD_IDS from "../../scripts/upload-ids";
   
 
 const Upload: React.FC = () => {
 
 	const { guestId } = useParams<{ guestId: string }>();
+	const guestName = UPLOAD_IDS[guestId];
+
+	if(!guestName){
+		throw new Error("Unknown guest ID.");
+	}
 
 	// const [db, setDb] = useState<FileSystemDb | null>(null);
 	const [directories, setDirectories] = useState<IFileMetadata[]>([]);
@@ -400,6 +406,7 @@ const Upload: React.FC = () => {
 
 	return (
 		<>
+			<h1>{guestName}'s Uploads</h1>
 			{/* Breadcrumb Navigation */}
 			<div className="breadcrumb">
 				{breadcrumb.map((crumb, index) => (
