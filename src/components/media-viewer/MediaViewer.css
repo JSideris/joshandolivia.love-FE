@@ -57,4 +57,15 @@
 	color: white;
 	font-size: 18px;
   }
-  
+
+
+.photo-info{
+	position: fixed;
+	top: 10px;
+	left: 10px;
+}
+
+.download-link{
+	cursor: pointer;
+	text-decoration: underline;
+}

@@ -44,3 +44,24 @@ You don’t have to ever use `eject`. The curated feature set is suitable for sm
 You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
 To learn React, check out the [React documentation](https://reactjs.org/).
+
+# Planning
+
+## Photo Viewer
+
+### Photo Viewer Sections / Tags
+
+- Home page carosel thing.
+- Highlights.
+- All media.
+
+### Functions
+
+- Carosel will randomly show a small selection of HQ photos, inviting the user to view more.
+- Inside the photos page, the user will see our highlights as a grid of photos.
+- Clicking on a photo will launch the photo viewer.
+- We should have a slideshow mode.
+- At the top, we can have tabs for "all media" and "videos".
+- We could also have filter by photographer.
+- Each photograph should also show the uplader's name somewhere.
+- Download HQ.

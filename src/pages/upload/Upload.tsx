@@ -50,6 +50,8 @@ const Upload: React.FC = () => {
 	const [isViewerOpen, setIsViewerOpen] = useState(false);
 	const [mediaUrl, setMediaUrl] = useState<string | null>(null);
 	const [nextMediaUrl, setNextMediaUrl] = useState<string | null>(null);
+	const [photographerName, setPhotographerName] = useState<string | null>(null);
+	const [hdMediaPath, setHdMediaPath] = useState<string | null>(null);
 
 	// const [isVideoViewerOpen, setIsVideoViewerOpen] = useState(false);
 	// const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -254,15 +256,18 @@ const Upload: React.FC = () => {
 
 	const loadMedia = (path: string, nextPath: string) => {
 		let fullPath = null;
+		let fullHdPath = `${CLOUDFRONT_URL}/uploads${path}`;
 		let nextFullPath = null;
 
 		if(imageFileTypes.indexOf(path.toLocaleLowerCase().split(".").pop()) != -1){
 			let parts = path.split("/");
 			parts[2] = "compressed";
 			fullPath = `${CLOUDFRONT_URL}/uploads${parts.join("/")}`;
+			setHdMediaPath(fullHdPath);
 		}
 		else{
-			fullPath = `${CLOUDFRONT_URL}/uploads${path}`;
+			fullPath = fullHdPath;
+			setHdMediaPath(null);
 		}
 
 		if(nextPath){
@@ -278,6 +283,7 @@ const Upload: React.FC = () => {
 
 		setMediaUrl(fullPath);
 		setNextMediaUrl(nextFullPath);
+		setPhotographerName(UPLOAD_IDS[path.split("/")[1]]);
 		setIsViewerOpen(true);
 	}
 
@@ -584,6 +590,8 @@ const Upload: React.FC = () => {
 						isOpen={isViewerOpen}
 						mediaUrl={mediaUrl}
 						nextMediaUrl={nextMediaUrl}
+						photographerName={photographerName}
+						hdPhotoUrl={hdMediaPath}
 						onClose={closePhotoViewer} 
 						onSwipeLeft={selectNext}
 						onSwipeRight={selectPrev}
