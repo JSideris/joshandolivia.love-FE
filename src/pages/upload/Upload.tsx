@@ -16,7 +16,7 @@ import ProgressBar from "../../components/progress-bar/ProgressBar";
 import DragAndDrop from "../../components/drag-and-drop/DragAndDrop";
 import IndexedDbFilesystem from "../../scripts/filesystem/indexed-db-filesystem";
 import { IFileMetadata } from "../../scripts/filesystem/i-filesystem";
-import PhotoViewer from "../../components/photo-viewer/PhotoViewer";
+import MediaViewer from "../../components/media-viewer/MediaViewer";
 import { CLOUDFRONT_URL, imageFileTypes, videoFileFormats } from "../../scripts/constants";
 import VideoViewer from "../../components/video-viewer/VideoViewer";
 import UPLOAD_IDS from "../../scripts/upload-ids";
@@ -48,10 +48,11 @@ const Upload: React.FC = () => {
 
 	// Photo viewer:
 	const [isViewerOpen, setIsViewerOpen] = useState(false);
-	const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+	const [mediaUrl, setMediaUrl] = useState<string | null>(null);
+	const [nextMediaUrl, setNextMediaUrl] = useState<string | null>(null);
 
-	const [isVideoViewerOpen, setIsVideoViewerOpen] = useState(false);
-	const [videoUrl, setVideoUrl] = useState<string | null>(null);
+	// const [isVideoViewerOpen, setIsVideoViewerOpen] = useState(false);
+	// const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
 	const GET_S3_FS = "https://2fiucgicl8.execute-api.us-east-2.amazonaws.com/get-s3-fs";
 	const DELETE_S3_FILE = "https://2fiucgicl8.execute-api.us-east-2.amazonaws.com/delete-s3-file";
@@ -224,23 +225,6 @@ const Upload: React.FC = () => {
 		// console.log("Loading", path, contents);
 	};
 
-	// const loadDirectory = async (fsDb: FileSystemDb, parentDirectoryId: number | null) => {
-	// 	const allDirectories = await fsDb.getAllRecords('directory');
-	// 	const allFiles = await fsDb.getAllRecords('s3File');
-
-	// 	// Filter directories and files by parentDirectoryId
-	// 	const filteredDirectories = allDirectories.filter(
-	// 		(dir: Directory) => dir.parentDirectoryId === parentDirectoryId
-	// 	);
-	// 	const filteredFiles = allFiles.filter(
-	// 		(file: S3File) => file.parentDirectoryId === parentDirectoryId
-	// 	);
-
-	// 	setDirectories(filteredDirectories);
-	// 	setFiles(filteredFiles);
-	// 	setCurrentDirectoryId(parentDirectoryId);
-	// };
-
 	const handleDirectoryDoubleClick = (path: string, directoryName: string) => {
 		if (fs) {
 			let newPath = `${currentPath}${directoryName}/`;
@@ -261,17 +245,41 @@ const Upload: React.FC = () => {
 		// console.log(`File ${fileName} opened`);
 
 		let fileRecord = await fs.getMetadata(`${fileName}`);
-		// console.log(fileName, fileRecord);
 
-		if(videoFileFormats.indexOf(fileName.toLowerCase().split(".").pop()) != -1){
-			openVideoViewer(`${CLOUDFRONT_URL}/uploads${fileRecord.path}`);
-		}
-		else if(imageFileTypes.indexOf(fileName.toLowerCase().split(".").pop()) != -1){
-			if(fileRecord.compressedPath){
-				openPhotoViewer(`${CLOUDFRONT_URL}/uploads${fileRecord.compressedPath}`);
-			}
+		if(imageFileTypes.indexOf(fileName.toLowerCase().split(".").pop()) != -1 
+			|| videoFileFormats.indexOf(fileName.toLowerCase().split(".").pop()) != -1){
+			loadMedia(fileRecord.path, null);
 		}
 	};
+
+	const loadMedia = (path: string, nextPath: string) => {
+		let fullPath = null;
+		let nextFullPath = null;
+
+		if(imageFileTypes.indexOf(path.toLocaleLowerCase().split(".").pop()) != -1){
+			let parts = path.split("/");
+			parts[2] = "compressed";
+			fullPath = `${CLOUDFRONT_URL}/uploads${parts.join("/")}`;
+		}
+		else{
+			fullPath = `${CLOUDFRONT_URL}/uploads${path}`;
+		}
+
+		if(nextPath){
+			if(imageFileTypes.indexOf(nextPath.toLocaleLowerCase().split(".").pop()) != -1){
+				let parts = nextPath.split("/");
+				parts[2] = "compressed";
+				nextFullPath = `${CLOUDFRONT_URL}/uploads${parts.join("/")}`;
+			}
+			else{
+				nextFullPath = `${CLOUDFRONT_URL}/uploads${path}`;
+			}
+		}
+
+		setMediaUrl(fullPath);
+		setNextMediaUrl(nextFullPath);
+		setIsViewerOpen(true);
+	}
 
 	const upOne = () => {
 		if (breadcrumb.length > 1) {
@@ -289,6 +297,46 @@ const Upload: React.FC = () => {
 			// setCurrentPath(newPath);
 		}
 	};
+
+	const selectPrev = () => {
+		// console.log("prev", selectedItem);
+		if (selectedItem) {
+			const currentIndex = files.findIndex((f) => f.path === selectedItem.path);
+			// console.log(currentIndex);
+			if (currentIndex !== -1 && currentIndex > 0) {
+				let newPath = files[currentIndex - 1].path;
+				setSelectedItem({ type: 'file', path: newPath });
+				if(isViewerOpen){
+					loadMedia(newPath, null);
+				}
+			}
+
+		}
+	}
+
+	const selectNext = () => {
+		// console.log("next", selectedItem);
+		if (selectedItem) {
+
+			let newPath = null;
+			let nextNewPath = null; // For preloading.
+
+			const currentIndex = files.findIndex((f) => f.path === selectedItem.path);
+			// console.log(currentIndex);
+			if (currentIndex !== -1 && currentIndex < files.length - 1) {
+				newPath = files[currentIndex + 1].path;
+				setSelectedItem({ type: 'file', path: newPath });
+			}
+			if (currentIndex !== -1 && currentIndex < files.length - 2) {
+				nextNewPath = files[currentIndex + 2].path;
+			}
+			
+			if(newPath && isViewerOpen){
+				loadMedia(newPath, nextNewPath);
+			}
+		}
+		
+	}
 
 	const navigateToBreadcrumb = async (index: number) => {
 		let constructedPath = "/";
@@ -361,6 +409,11 @@ const Upload: React.FC = () => {
 
 	const handleKeyPressOnDirectory = (e: React.KeyboardEvent, path: string, directoryName: string) => {
 		switch (e.key) {
+			case 'Escape': {
+				if(isViewerOpen) closePhotoViewer();
+				// if(isVideoViewerOpen) closeVideoViewer();
+				break;
+			}
 			case 'Enter': {
 				handleDirectoryDoubleClick(path, directoryName);
 				break;
@@ -374,12 +427,25 @@ const Upload: React.FC = () => {
 
 	const handleKeyPressOnFile = (e: React.KeyboardEvent, fileId: string) => {
 		switch (e.key) {
+			case 'Escape': {
+				if(isViewerOpen) closePhotoViewer();
+				// if(isVideoViewerOpen) closeVideoViewer();
+				break;
+			}
 			case 'Enter': {
 				// handleDirectoryDoubleClick(directoryId, directoryName);
 				break;
 			}
 			case 'Delete': {
 				deleteItem(fileId);
+				break;
+			}
+			case 'ArrowLeft': {
+				selectPrev();
+				break;
+			}
+			case 'ArrowRight': {
+				selectNext();
 				break;
 			}
 		}
@@ -434,27 +500,21 @@ const Upload: React.FC = () => {
 		}));
 	};
 
-	// Function to open the photo viewer
-	const openPhotoViewer = (url: string) => {
-		setPhotoUrl(url);
-		setIsViewerOpen(true);
-	};
-
 	// Function to close the photo viewer
 	const closePhotoViewer = () => {
 		setIsViewerOpen(false);
-		setPhotoUrl(null);
+		setMediaUrl(null);
 	};
 
-	const closeVideoViewer = () => {
-		setIsVideoViewerOpen(false);
-		setVideoUrl(null);
-	};
+	// const closeVideoViewer = () => {
+	// 	setIsVideoViewerOpen(false);
+	// 	setVideoUrl(null);
+	// };
 
-	const openVideoViewer = (url: string) => {
-		setVideoUrl(url);
-		setIsVideoViewerOpen(true);
-	};
+	// const openVideoViewer = (url: string) => {
+	// 	setVideoUrl(url);
+	// 	setIsVideoViewerOpen(true);
+	// };
 
 	return (
 		<>
@@ -497,10 +557,11 @@ const Upload: React.FC = () => {
 							<FileIcon
 								key={directory.path}
 								iconUrl={directoryIcon} // Use the SVG icon for directories
-								label={directory.name}
+								label={currentPath == "/" ? (UPLOAD_IDS[directory.name] || directory.name) : directory.name}
 								onSelect={() => setSelectedItem({ type: 'directory', path: directory.path })} // Track selection
 								onDoubleClick={() => handleDirectoryDoubleClick(directory.path, directory.name)}
 								onKeyPress={(e) => { handleKeyPressOnDirectory(e as any, directory.path, directory.name) }}
+								selected={selectedItem?.path === directory.path}
 							/>
 						))}
 
@@ -513,19 +574,21 @@ const Upload: React.FC = () => {
 								onSelect={() => setSelectedItem({ type: 'file', path: file.path })} // Track selection
 								onDoubleClick={() => handleFileDoubleClick(file.path)}
 								onKeyPress={(e) => { handleKeyPressOnFile(e as any, file.path) }}
+								selected={selectedItem?.path === file.path}
 							/>
 						))}
 
 					</div>
 					{!files.length && !directories.length && <div className="empty-folder-message">Folder is empty. To upload files, drag and drop them onto the web page, or click the upload to cloud button above.</div>}
-					<PhotoViewer
+					<MediaViewer
 						isOpen={isViewerOpen}
-						photoUrl={photoUrl}
+						mediaUrl={mediaUrl}
+						nextMediaUrl={nextMediaUrl}
 						onClose={closePhotoViewer} />
-					<VideoViewer
+					{/* <VideoViewer
 						isOpen={isVideoViewerOpen}
 						videoUrl={videoUrl}
-						onClose={closeVideoViewer} />
+						onClose={closeVideoViewer} /> */}
 					<ProgressBar
 						totalFiles={totalFiles}
 						completedThumbnails={completedThumbnails}

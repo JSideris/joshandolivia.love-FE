@@ -8,14 +8,16 @@ interface FileIconProps {
   onSelect?: (label: string) => void;   // Event handler for when the icon is selected
   onKeyPress?: (e: KeyboardEvent) => void;  // Key press handler for parent component
   onDoubleClick?: () => void;  // Double click handler for parent component
+  selected?: boolean;     // Prop for controlling if the icon is selected from parent
 }
 
-const FileIcon: React.FC<FileIconProps> = ({ iconUrl, label, size = 100, onSelect, onKeyPress, onDoubleClick }) => {
-  const [isSelected, setIsSelected] = useState<boolean>(false);
+const FileIcon: React.FC<FileIconProps> = ({
+  iconUrl, label, size = 100, onSelect, onKeyPress, onDoubleClick, selected = false
+}) => {
+  const [isSelected, setIsSelected] = useState<boolean>(selected);
   const iconRef = useRef<HTMLDivElement | null>(null);  // Use ref to track the current component
 
   const handleIconDoubleClick = () => {
-    // Raise event.
     if (onDoubleClick) {
       onDoubleClick();
     }
@@ -29,7 +31,6 @@ const FileIcon: React.FC<FileIconProps> = ({ iconUrl, label, size = 100, onSelec
   };
 
   const handleClickOutside = (e: MouseEvent) => {
-    // Check if the click is outside of the current file icon
     if (iconRef.current && !iconRef.current.contains(e.target as Node)) {
       setIsSelected(false);
     }
@@ -41,6 +42,10 @@ const FileIcon: React.FC<FileIconProps> = ({ iconUrl, label, size = 100, onSelec
       document.removeEventListener('click', handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    setIsSelected(selected);  // Sync internal state with the selected prop
+  }, [selected]);
 
   useEffect(() => {
     if (isSelected && onKeyPress) {
@@ -59,7 +64,7 @@ const FileIcon: React.FC<FileIconProps> = ({ iconUrl, label, size = 100, onSelec
     <div 
       ref={iconRef} 
       className={`file-icon ${isSelected ? 'selected' : ''}`} 
-      style={{ width: size, height: size + 40 }} // Additional height for the label
+      style={{ width: size, height: size + 40 }} 
       onClick={handleIconClick}
       onDoubleClick={handleIconDoubleClick}
     >
