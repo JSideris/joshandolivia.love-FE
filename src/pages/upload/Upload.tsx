@@ -27,14 +27,11 @@ const Upload: React.FC = () => {
 	const { guestId } = useParams<{ guestId: string }>();
 	const guestName = UPLOAD_IDS[guestId];
 
-	if(!guestName){
-		throw new Error("Unknown guest ID.");
-	}
-
 	// const [db, setDb] = useState<FileSystemDb | null>(null);
 	const [directories, setDirectories] = useState<IFileMetadata[]>([]);
 	const [files, setFiles] = useState<IFileMetadata[]>([]);
 	// const [currentDirectoryId, setCurrentDirectoryId] = useState<number | null>(null); // Start with root
+	const [basePath, setBasePath] = useState<string>("");
 	const [currentPath, setCurrentPath] = useState<string>("");
 	const [breadcrumb, setBreadcrumb] = useState<string[]>([]); // Breadcrumb stack
 	const [selectedItem, setSelectedItem] = useState<{ type: 'directory' | 'file'; path: string } | null>(null); // Track selected item
@@ -60,6 +57,8 @@ const Upload: React.FC = () => {
 	const DELETE_S3_FILE = "https://2fiucgicl8.execute-api.us-east-2.amazonaws.com/delete-s3-file";
 
 	useEffect(() => {
+
+		let basePath;
 		const initDb = async () => {
 
 			let fs = new IndexedDbFilesystem(uploadProgress);
@@ -84,20 +83,41 @@ const Upload: React.FC = () => {
 				let fileKeyHash = {};
 				let thumbnailKeyHash = {};
 				let compressedKeyHash = {};
+
 				let directoriesHash = {};
 
 				for (let i = 0; i < keys.length; i++) {
-					keys[i] = keys[i].substring(`uploads/${guestId}/`.length);
-					let key = keys[i];
-					if(key.startsWith("files/")){
+					// keys[i] = keys[i].substring(`uploads/${guestId}/`.length);
+					// let key = keys[i];
+					let keyParts = keys[i].split("/");
+					keyParts.shift(); // Remove the uploads folder
+					let fileGuestDirectory = keyParts.shift(); // Remove the guestId
+					// console.log(fileGuestDirectory);
+					let key = keyParts.join("/");
+
+					let isFile = key.startsWith("files/");
+					let isCompressed = key.startsWith("compressed/");
+					let isThumbnail = key.startsWith("thumbnails/");
+
+					fileKeyHash[fileGuestDirectory] = fileKeyHash[fileGuestDirectory] || {};
+					compressedKeyHash[fileGuestDirectory] = compressedKeyHash[fileGuestDirectory] || {};
+					thumbnailKeyHash[fileGuestDirectory] = thumbnailKeyHash[fileGuestDirectory] || {};
+
+					if(isFile){
 						key = key.substring("files".length);
-						fileKeyHash[key] = true;
+						fileKeyHash[fileGuestDirectory][key] = true;
+
+						// Also set up the directories here.
 
 						let keyPathParts = key.split("/");
 						keyPathParts.pop(); // Remove the file name
 						keyPathParts.shift(); // Remove starting /
 						
-						let constructedPath = "";
+						let constructedPath = `/${fileGuestDirectory}`;
+						directoriesHash[constructedPath] = true;
+						constructedPath += `/files`;
+						directoriesHash[constructedPath] = true;
+
 						for(let j = 0; j < keyPathParts.length; j++){
 							let pathPart = keyPathParts[j];
 							if(pathPart.length){
@@ -107,19 +127,20 @@ const Upload: React.FC = () => {
 							}
 						}
 					}
-					else if(key.startsWith("compressed/")){
+					else if(isCompressed){
 						key = key.substring("compressed".length);
-						compressedKeyHash[key] = true;
+						compressedKeyHash[fileGuestDirectory][key] = true;
 					}
-					else if(key.startsWith("thumbnails/")){
+					else if(isThumbnail){
 						key = key.substring("thumbnails".length);
-						thumbnailKeyHash[key] = true;
+						thumbnailKeyHash[fileGuestDirectory][key] = true;
 					}
 				}
 
 				// For each directory, make sure all the directories exist in our local db.
 
 				let directories = Object.keys(directoriesHash);
+				// console.log("directories", directories);
 				for(let i = 0; i < directories.length; i++){
 					let path = directories[i];
 					if(!await fs.exists(path)){
@@ -129,23 +150,47 @@ const Upload: React.FC = () => {
 
 				// Add all the files that don't exist locally.
 
-				let files = Object.keys(fileKeyHash);
-				for(let i = 0; i < files.length; i++){
-					let fullFilePath = files[i];
-					// console.log("File:", fullFilePath);
-					let fileName = fullFilePath.split("/").pop();
-					let filePath = fullFilePath.split("/").slice(0, -1).join("/").substring(1) + "/";
-					if(filePath == "/")	filePath = "";
-					// console.log("Create", filePath, fileName);
-					await fs.createFileRecord(filePath, fileName, 0, !!thumbnailKeyHash[fullFilePath])
+				let guests = Object.keys(fileKeyHash);
+				for(let i = 0; i < guests.length; i++){
+					let currentGuestId = guests[i];
+					let currentFiles = Object.keys(fileKeyHash[currentGuestId]);
+
+					for(let j = 0; j < currentFiles.length; j++){
+						let relativeFilePath = currentFiles[j];
+						// console.log("File:", fullFilePath);
+						let fileName = relativeFilePath.split("/").pop();
+						let filePath = `${currentGuestId}/files${relativeFilePath}`.split("/").slice(0, -1).join("/") + "/";
+						if(filePath == "/")	filePath = "";
+						// console.log("Create", filePath, fileName);
+						// console.log("Guest Folder", currentGuestId);
+						let thumbnailPath = null;
+						let compressedPath = null;
+						if(thumbnailKeyHash[currentGuestId][relativeFilePath]){
+							thumbnailPath = `/${currentGuestId}/thumbnails${relativeFilePath}`.split("/").slice(0, -1).join("/") + "/" + fileName;
+						}
+						if(compressedKeyHash[currentGuestId][relativeFilePath]){
+							compressedPath = `/${currentGuestId}/compressed${relativeFilePath}`.split("/").slice(0, -1).join("/") + "/" + fileName;
+						}
+						// console.log(thumbnailPath);
+						await fs.createFileRecord(`/${filePath}${fileName}`, 0, thumbnailPath, compressedPath);
+					}
 				}
 
 				// let allFileKeys = Object.keys(fileKeyHash);
 
 			}
 
-			loadDirectory(fs, "/"); // Load root directory (parentDirectoryId is null for root)
+			console.log(basePath);
+			loadDirectory(fs, basePath); // Load root directory (parentDirectoryId is null for root)
 		};
+
+		if(guestId == "master"){
+			basePath = "/";
+		}
+		else{
+			basePath = `/${guestId}/files/`;
+		}
+		setBasePath(basePath);
 
 		initDb();
 
@@ -156,11 +201,6 @@ const Upload: React.FC = () => {
 	}, []);
 
 	const dropFiles = async (files: { file: File, path: string }[]) => {
-		// console.log(files);
-		// uploadPipe.processBatch({
-		// 	files: files,
-		// 	userId: guestId,
-		// });
 		await fs.writeFiles(files);
 	};
 
@@ -217,14 +257,19 @@ const Upload: React.FC = () => {
 		}
 	};
 
-	const handleFileDoubleClick = (fileName: string) => {
+	const handleFileDoubleClick = async (fileName: string) => {
 		// console.log(`File ${fileName} opened`);
 
+		let fileRecord = await fs.getMetadata(`${fileName}`);
+		// console.log(fileName, fileRecord);
+
 		if(videoFileFormats.indexOf(fileName.toLowerCase().split(".").pop()) != -1){
-			openVideoViewer(`${CLOUDFRONT_URL}/uploads/${guestId}/files${fileName}`);
+			openVideoViewer(`${CLOUDFRONT_URL}/uploads${fileRecord.path}`);
 		}
 		else if(imageFileTypes.indexOf(fileName.toLowerCase().split(".").pop()) != -1){
-			openPhotoViewer(`${CLOUDFRONT_URL}/uploads/${guestId}/compressed${fileName}`);
+			if(fileRecord.compressedPath){
+				openPhotoViewer(`${CLOUDFRONT_URL}/uploads${fileRecord.compressedPath}`);
+			}
 		}
 	};
 
@@ -252,12 +297,15 @@ const Upload: React.FC = () => {
 			constructedPath += breadcrumb[i] + "/";
 		}
 
-		await loadDirectory(fs, constructedPath);
+		if(constructedPath.length >= basePath.length){
+			await loadDirectory(fs, constructedPath);
+		}
 	};
 
 	const newFolderBtn = async () => {
 		if (fs) {
 			let newFolderName = prompt("Enter the name of the new folder:");
+			if(!newFolderName) return;
 			let path = `${currentPath}${newFolderName}`;
 			// console.log(path);
 			// return;
@@ -292,6 +340,10 @@ const Upload: React.FC = () => {
 			console.log(`Deleting ${path}.`);
 			await fs.deleteFile(item.path);
 
+			// Get the relative path (the part after "files"):
+			let relativePath = item.path.split("/").slice(3).join("/");
+			// console.log(relativePath);
+
 			await fetch(DELETE_S3_FILE, {
 				method: "POST",
 				headers: {
@@ -299,7 +351,7 @@ const Upload: React.FC = () => {
 				},
 				body: JSON.stringify({
 					guestId: guestId,
-					relativeKey: item.path
+					relativeKey: relativePath
 				})
 			});
 		}
@@ -406,91 +458,96 @@ const Upload: React.FC = () => {
 
 	return (
 		<>
-			<h1>{guestName}'s Uploads</h1>
-			{/* Breadcrumb Navigation */}
-			<div className="breadcrumb">
-				{breadcrumb.map((crumb, index) => (
-					<span key={index}>
-						<span
+			{!!guestName ?
+				<>
+					<h1>{guestName}'s Uploads</h1>
+					{/* Breadcrumb Navigation */}
+					<div className="breadcrumb">
+						{breadcrumb.map((crumb, index) => (
+							<span key={index}>
+								<span
 
-							className="breadcrumb-item"
-							onClick={() => navigateToBreadcrumb(index)}
-						>
-							{index == 0 ? "files" : crumb}
-						</span>
-						{index < breadcrumb.length - 1 && <span className="breadcrumb-divider">/</span>}
-					</span>
-				))}
-			</div>
+									className="breadcrumb-item"
+									onClick={() => navigateToBreadcrumb(index)}
+								>
+									{index == 0 ? "uploads" : crumb}
+								</span>
+								{index < breadcrumb.length - 1 && <span className="breadcrumb-divider">/</span>}
+							</span>
+						))}
+					</div>
 
-			<button className="fs-btn" onClick={newFolderBtn}><img src={newFolderButtonIcon} width="32px" /></button>
-			<UploadButton onFilesSelected={selectFiles} />
+					<button className="fs-btn" onClick={newFolderBtn}><img src={newFolderButtonIcon} width="32px" /></button>
+					<UploadButton onFilesSelected={selectFiles} />
 
-			<div className="file-grid">
-				{currentPath !== "/" && (
-					<FileIcon
-						iconUrl={returnIcon}
-						label=".."
-						onDoubleClick={() => upOne()}
-						onKeyPress={(e) => {
-							if (e.key === 'Enter') {
-								upOne();
-							}
-						}}
+					<div className="file-grid">
+						{currentPath.length > basePath.length && (
+							<FileIcon
+								iconUrl={returnIcon}
+								label=".."
+								onDoubleClick={() => upOne()}
+								onKeyPress={(e) => {
+									if (e.key === 'Enter') {
+										upOne();
+									}
+								}}
+							/>
+						)}
+						{directories.map((directory) => (
+							<FileIcon
+								key={directory.path}
+								iconUrl={directoryIcon} // Use the SVG icon for directories
+								label={directory.name}
+								onSelect={() => setSelectedItem({ type: 'directory', path: directory.path })} // Track selection
+								onDoubleClick={() => handleDirectoryDoubleClick(directory.path, directory.name)}
+								onKeyPress={(e) => { handleKeyPressOnDirectory(e as any, directory.path, directory.name) }}
+							/>
+						))}
+
+						{files.map((file) => (
+							<FileIcon
+								key={file.path}
+								// iconUrl={file.localThumbnailUrl || file.remoteThumbnailUrl} // Use the file's thumbnail for the icon
+								iconUrl={file.thumbnailPath ? `${CLOUDFRONT_URL}/uploads${file.thumbnailPath}` : videoFileFormats.indexOf(file.path.toLocaleLowerCase().split(".").pop()) != -1 ? videoIcon : unknownIcon} // Use the file's thumbnail for the icon
+								label={file.name}
+								onSelect={() => setSelectedItem({ type: 'file', path: file.path })} // Track selection
+								onDoubleClick={() => handleFileDoubleClick(file.path)}
+								onKeyPress={(e) => { handleKeyPressOnFile(e as any, file.path) }}
+							/>
+						))}
+
+					</div>
+					{!files.length && !directories.length && <div className="empty-folder-message">Folder is empty. To upload files, drag and drop them onto the web page, or click the upload to cloud button above.</div>}
+					<PhotoViewer
+						isOpen={isViewerOpen}
+						photoUrl={photoUrl}
+						onClose={closePhotoViewer} />
+					<VideoViewer
+						isOpen={isVideoViewerOpen}
+						videoUrl={videoUrl}
+						onClose={closeVideoViewer} />
+					<ProgressBar
+						totalFiles={totalFiles}
+						completedThumbnails={completedThumbnails}
+						completedUploads={completedUploads}
+						show={show}
+						avgT={avgT}
 					/>
-				)}
-				{directories.map((directory) => (
-					<FileIcon
-						key={directory.path}
-						iconUrl={directoryIcon} // Use the SVG icon for directories
-						label={directory.name}
-						onSelect={() => setSelectedItem({ type: 'directory', path: directory.path })} // Track selection
-						onDoubleClick={() => handleDirectoryDoubleClick(directory.path, directory.name)}
-						onKeyPress={(e) => { handleKeyPressOnDirectory(e as any, directory.path, directory.name) }}
-					/>
-				))}
+					<DragAndDrop currentPath={currentPath} onDrop={dropFiles} />
+				</>
 
-				{files.map((file) => (
-					<FileIcon
-						key={file.path}
-						// iconUrl={file.localThumbnailUrl || file.remoteThumbnailUrl} // Use the file's thumbnail for the icon
-						iconUrl={file.hasThumbnail ? `${CLOUDFRONT_URL}/uploads/${guestId}/thumbnails${file.path}` : videoFileFormats.indexOf(file.path.toLocaleLowerCase().split(".").pop()) != -1 ? videoIcon : unknownIcon} // Use the file's thumbnail for the icon
-						label={file.name}
-						onSelect={() => setSelectedItem({ type: 'file', path: file.path })} // Track selection
-						onDoubleClick={() => handleFileDoubleClick(file.path)}
-						onKeyPress={(e) => { handleKeyPressOnFile(e as any, file.path) }}
-					/>
-				))}
-
-			</div>
-			{!files.length && !directories.length && <div className="empty-folder-message">Folder is empty. To upload files, drag and drop them onto the web page, or click the upload to cloud button above.</div>}
-			<PhotoViewer
-				isOpen={isViewerOpen}
-				photoUrl={photoUrl}
-				onClose={closePhotoViewer} />
-			<VideoViewer
-				isOpen={isVideoViewerOpen}
-				videoUrl={videoUrl}
-				onClose={closeVideoViewer} />
-			<ProgressBar
-				totalFiles={totalFiles}
-				completedThumbnails={completedThumbnails}
-				completedUploads={completedUploads}
-				show={show}
-				avgT={avgT}
-			/>
-			<DragAndDrop currentPath={currentPath} onDrop={dropFiles} />
+				//   <div className="file-grid">
+				// 	<FileIcon
+				// 		iconUrl={null}
+				// 		label="ReallyReallyReallyReally ReallyReallyLongName.png"
+				// 		size={100}
+				// 		// onSelect={handleSelect}
+				// 		// onKeyPress={handleKeyPress}
+				// 	/>
+				//   </div>
+				: <h1>Guest not found</h1>
+			}
 		</>
-
-		//   <div className="file-grid">
-		// 	<FileIcon
-		// 		iconUrl={null}
-		// 		label="ReallyReallyReallyReally ReallyReallyLongName.png"
-		// 		size={100}
-		// 		// onSelect={handleSelect}
-		// 		// onKeyPress={handleKeyPress}
-		// 	/>
-		//   </div>
 	);
 };
 

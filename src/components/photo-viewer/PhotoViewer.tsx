@@ -12,11 +12,11 @@ const PhotoViewer: React.FC<PhotoViewerProps> = ({ isOpen, photoUrl, onClose }) 
 
   return (
     <div className="photo-viewer-overlay" onClick={onClose}>
-      <div className="photo-viewer-content" onClick={(e) => e.stopPropagation()}>
+      <div className="photo-viewer-content">
         <button className="close-btn" onClick={onClose}>
           &times;
         </button>
-        <img src={photoUrl} alt="Full View" className="photo-viewer-image" />
+        <img src={photoUrl} alt="Full View" className="photo-viewer-image" onClick={(e) => e.stopPropagation()} />
       </div>
     </div>
   );

@@ -7,7 +7,9 @@ export interface IFileMetadata {
 	size: number;
 	lastModified: Date;
 	isDirectory: boolean;
-	hasThumbnail: boolean;
+	// hasThumbnail: boolean;
+	thumbnailPath?: string;
+	compressedPath?: string;
 }
 
 export interface IFilesystem {

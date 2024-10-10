@@ -12,7 +12,7 @@ const REGISTER_UPLOAD_URL = "https://2fiucgicl8.execute-api.us-east-2.amazonaws.
 
 type FileRecord = {
 	id: string;
-	userId: string;
+	// userId: string;
 
 	name: string;
 	path: string; // Local path in the local fs.
@@ -213,7 +213,7 @@ export class GetUploadUrisPipeNode extends UploadPipeNode<FileRecord, FileRecord
 				const response = await fetch(GET_PRESIGNED_UPLOAD_URL, {
 					method: "POST",
 					body: JSON.stringify({
-						guestId: record.userId,
+						// guestId: record.userId,
 						path: `${record.path}${record.name}`,
 						getCompressedUrl: !!record.compressed,
 						getThumbnailUrl: !!record.thumbnail,
@@ -381,6 +381,8 @@ export class UploadPipe{
 					fileName: record.name, 
 					presignedUri: record.presignedThumbnailUploadUri
 				});
+
+				// record.localThumbnailUrl = URL.createObjectURL(record.thumbnail);
 			}
 		}
 
@@ -399,8 +401,7 @@ export class UploadPipe{
 		files: Array<{
 			path: string,
 			file: File
-		}>,
-		userId: string
+		}>
 	}){
 
 		this.total += data.files.length;
@@ -418,7 +419,7 @@ export class UploadPipe{
 		let batch = data.files.map(async (datum) => {
 			let record = {
 				id: uuid.v4(),
-				userId: data.userId,
+				// userId: data.userId,
 				file: datum.file,
 				thumbnail: null,
 				compressed: null,

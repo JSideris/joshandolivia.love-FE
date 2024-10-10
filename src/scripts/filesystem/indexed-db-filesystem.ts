@@ -14,7 +14,21 @@ class IndexedDbFilesystem implements IFilesystem {
 
 			for(let f in (progress.newFiles || [])){
 				let F = progress.newFiles[f];
-				await this.createFileRecord(F.path, F.name, F.file.size, !!F.thumbnail);
+				// await this.createFileRecord(F.path, F.name, F.file.size, !!F.thumbnail);
+				let path = `/${F.path}${F.name}`;
+				let pathParts = path.split("/");
+				let thumbPath = null;
+				let compressedPath = null;
+				if(F.thumbnail){
+					pathParts[2] = "thumbnails";
+					thumbPath = pathParts.join("/");
+				}
+				if(F.compressed){
+					pathParts[2] = "compressed";
+					compressedPath = pathParts.join("/");
+				}
+
+				await this.createFileRecord(path, F.file.size, thumbPath, compressedPath);
 			}
 
 			progressHandler(this, progress);
@@ -33,7 +47,7 @@ class IndexedDbFilesystem implements IFilesystem {
 		file: File,
 		path: string
 	}[]): Promise<void> {
-		let userId = window.location.hash.split("/").pop() || window.location.pathname.split("/").pop() || "anonymous";
+		// let userId = window.location.hash.split("/").pop() || window.location.pathname.split("/").pop() || "anonymous";
 
 		{ // Create the directories related to the files.
 
@@ -61,8 +75,7 @@ class IndexedDbFilesystem implements IFilesystem {
 		}
 
 		await this.uploadPipe.processBatch({
-			files: data,
-			userId
+			files: data
 		});
 	}
 	async deleteFile(path: string): Promise<void> {
@@ -108,10 +121,10 @@ class IndexedDbFilesystem implements IFilesystem {
 		});
 	}
 
-	async createFileRecord(path: string, name: string, size: number, hasThumbnail: boolean): Promise<void> {
-		if(await this.exists("/"+path+name)){
-			console.log(`Warning: File already exists at path: ${"/"+path+name}.`);
-			await this.deleteFile("/"+path+name);
+	async createFileRecord(path: string, size: number, thumbnailPath: string, compressedPath): Promise<void> {
+		if(await this.exists(path)){
+			console.log(`Warning: File already exists at path: ${path}.`);
+			await this.deleteFile(path);
 		}
 		
 		const db = await this.openDB();
@@ -120,12 +133,13 @@ class IndexedDbFilesystem implements IFilesystem {
 			const transaction = db.transaction(this.storeName, 'readwrite');
 			const store = transaction.objectStore(this.storeName);
 			const directory: IFileMetadata = {
-				name: name,
-				path: "/" + path + name,
+				name: path.split("/").pop() || "",
+				path: path,
 				size: size,
 				lastModified: new Date(),
 				isDirectory: false,
-				hasThumbnail: hasThumbnail
+				thumbnailPath,
+				compressedPath
 			};
 			const request = store.add(directory);
 			request.onsuccess = () => resolve();
@@ -143,7 +157,7 @@ class IndexedDbFilesystem implements IFilesystem {
 				size: 0,
 				lastModified: new Date(),
 				isDirectory: true,
-				hasThumbnail: false
+				thumbnailPath: null
 			};
 			const request = store.add(directory);
 			request.onsuccess = () => resolve();
