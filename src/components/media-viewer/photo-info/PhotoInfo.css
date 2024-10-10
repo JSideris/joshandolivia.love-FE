@@ -1,0 +1,13 @@
+.photo-info {
+	position: fixed;
+	top: 10px;
+	left: 10px;
+	color: white;
+	font-size: 16px;
+}
+
+.download-link {
+	cursor: pointer;
+	text-decoration: underline;
+	color: white;
+}
