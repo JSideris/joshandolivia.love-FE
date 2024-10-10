@@ -584,7 +584,10 @@ const Upload: React.FC = () => {
 						isOpen={isViewerOpen}
 						mediaUrl={mediaUrl}
 						nextMediaUrl={nextMediaUrl}
-						onClose={closePhotoViewer} />
+						onClose={closePhotoViewer} 
+						onSwipeLeft={selectNext}
+						onSwipeRight={selectPrev}
+						/>
 					{/* <VideoViewer
 						isOpen={isVideoViewerOpen}
 						videoUrl={videoUrl}
