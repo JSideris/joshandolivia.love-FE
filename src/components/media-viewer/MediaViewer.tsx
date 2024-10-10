@@ -1,14 +1,16 @@
-import React, { useEffect, useRef, useState, memo } from 'react';
+import React, { useEffect, useState } from 'react';
 import './MediaViewer.css';
+
+// An array of image file extensions and video file extensions, respectively
 import { imageFileTypes, videoFileFormats } from '../../scripts/constants';
 
 interface MediaViewerProps {
   isOpen: boolean;
   mediaUrl: string;
-  nextMediaUrl?: string;
+  nextMediaUrl?: string; // Optional prop for the next media URL
   onClose: () => void;
-  onSwipeLeft: () => void;
-  onSwipeRight: () => void;
+  onSwipeLeft: () => void; // Notify parent to show next media
+  onSwipeRight: () => void; // Notify parent to show previous media
 }
 
 const MediaViewer: React.FC<MediaViewerProps> = ({
@@ -19,49 +21,51 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
   onSwipeLeft,
   onSwipeRight,
 }) => {
-  const touchStartXRef = useRef<number | null>(null);
-  const touchEndXRef = useRef<number | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchEndX, setTouchEndX] = useState<number | null>(null);
 
+  // Determine if the current URL is an image or video by checking the file extension
   const isImage = mediaUrl ? imageFileTypes.some((ext) => mediaUrl.toLowerCase().endsWith(ext)) : false;
   const isVideo = mediaUrl ? videoFileFormats.some((ext) => mediaUrl.toLowerCase().endsWith(ext)) : false;
 
-  // Preload the next image if available
+  // Preload the next media if it's an image
   useEffect(() => {
     if (nextMediaUrl && imageFileTypes.some((ext) => nextMediaUrl.endsWith(ext))) {
       const img = new Image();
-      img.src = nextMediaUrl;
+      img.src = nextMediaUrl; // Preload the next image
     }
   }, [nextMediaUrl]);
 
+  // Handle touch start
   const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartXRef.current = e.touches[0].clientX;
+    setTouchStartX(e.touches[0].clientX);
   };
 
+  // Handle touch move
   const handleTouchMove = (e: React.TouchEvent) => {
-    touchEndXRef.current = e.touches[0].clientX;
+    setTouchEndX(e.touches[0].clientX);
   };
 
+  // Handle touch end
   const handleTouchEnd = () => {
-    const touchStartX = touchStartXRef.current;
-    const touchEndX = touchEndXRef.current;
-
     if (touchStartX !== null && touchEndX !== null) {
       const distance = touchStartX - touchEndX;
 
-      if (distance > 50) {
+      // Define a threshold to determine if it was a swipe
+      const swipeThreshold = 50; // Minimum swipe distance in pixels
+
+      if (distance > swipeThreshold) {
+        // Swipe left detected
         onSwipeLeft();
-      } else if (distance < -50) {
+      } else if (distance < -swipeThreshold) {
+        // Swipe right detected
         onSwipeRight();
       }
     }
 
-    touchStartXRef.current = null;
-    touchEndXRef.current = null;
-  };
-
-  const handleImageClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
+    // Reset touch positions
+    setTouchStartX(null);
+    setTouchEndX(null);
   };
 
   if (!isOpen) return null;
@@ -78,56 +82,31 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
         <button className="close-btn" onClick={onClose}>
           &times;
         </button>
-        <MediaContent
-          mediaUrl={mediaUrl}
-          isImage={isImage}
-          isVideo={isVideo}
-          loaded={loaded}
-          setLoaded={setLoaded}
-        />
+
+        {isImage && (
+          <img
+            src={mediaUrl}
+            alt="Full View"
+            className="media-viewer-image"
+            onClick={(e) => e.stopPropagation()}
+          />
+        )}
+
+        {isVideo && (
+          <video controls className="media-viewer-video">
+            <source src={mediaUrl} type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        )}
+
+        {!isImage && !isVideo && (
+          <div className="media-viewer-unsupported">
+            Unsupported media type.
+          </div>
+        )}
       </div>
     </div>
   );
 };
-
-interface MediaContentProps {
-  mediaUrl: string;
-  isImage: boolean;
-  isVideo: boolean;
-  loaded: boolean;
-  setLoaded: (loaded: boolean) => void;
-}
-
-const MediaContent: React.FC<MediaContentProps> = memo(
-  ({ mediaUrl, isImage, isVideo, loaded, setLoaded }) => {
-    if (isImage) {
-      return (
-        <img
-          src={mediaUrl}
-          alt="Full View"
-          className={`media-viewer-image ${loaded ? 'loaded' : 'loading'}`}
-          onClick={(e) => e.stopPropagation()}
-          onLoad={() => setLoaded(true)}
-          loading="lazy"
-        />
-      );
-    }
-
-    if (isVideo) {
-      return (
-        <video controls className="media-viewer-video">
-          <source src={mediaUrl} type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
-      );
-    }
-
-    return (
-      <div className="media-viewer-unsupported">
-        Unsupported media type.
-      </div>
-    );
-  }
-);
 
 export default MediaViewer;
