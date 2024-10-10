@@ -285,6 +285,7 @@ const Upload: React.FC = () => {
 		setNextMediaUrl(nextFullPath);
 		setPhotographerName(UPLOAD_IDS[path.split("/")[1]]);
 		setIsViewerOpen(true);
+		document.body.classList.add('no-scroll');
 	}
 
 	const upOne = () => {
@@ -510,6 +511,7 @@ const Upload: React.FC = () => {
 	const closePhotoViewer = () => {
 		setIsViewerOpen(false);
 		setMediaUrl(null);
+		document.body.classList.remove('no-scroll');
 	};
 
 	// const closeVideoViewer = () => {
