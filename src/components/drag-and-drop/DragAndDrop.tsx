@@ -102,9 +102,17 @@ const DragAndDrop: React.FC<DragAndDropProps> = ({
 				} else {
 					// If it's a directory, we use webkitGetAsEntry() to handle it
 					const entry = item.webkitGetAsEntry();
+					// console.log(entry);
 					if (entry && entry.isDirectory) {
 						// Process directory recursively
 						files = files.concat(await traverseDirectory(entry, currentPath));
+					}
+					else{
+						const file = item.getAsFile();
+						files.push({
+							file: file,
+							path: currentPath
+						});
 					}
 				}
 			}

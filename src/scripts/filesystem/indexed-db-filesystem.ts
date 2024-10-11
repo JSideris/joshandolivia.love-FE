@@ -49,15 +49,16 @@ class IndexedDbFilesystem implements IFilesystem {
 	}[]): Promise<void> {
 		// let userId = window.location.hash.split("/").pop() || window.location.pathname.split("/").pop() || "anonymous";
 
+	
 		{ // Create the directories related to the files.
-
+			
 			let newDirs = {};
 			for(let f = 0; f < data.length; f++){
 				let F = data[f];
 				
 				// Add the directory first.
 				let constructedPath = "/";
-				let directoryParts = F.path.split("/");
+				let directoryParts = (F.path).split("/");
 				for(let j = 0; j < directoryParts.length - 1; j++){
 					let pathPart = directoryParts[j];
 					if(pathPart.length){

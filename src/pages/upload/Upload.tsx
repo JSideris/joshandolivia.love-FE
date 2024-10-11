@@ -204,6 +204,7 @@ const Upload: React.FC = () => {
 	}, []);
 
 	const dropFiles = async (files: { file: File, path: string }[]) => {
+		// console.log("drop", files);
 		await fs.writeFiles(files);
 	};
 
@@ -498,6 +499,8 @@ const Upload: React.FC = () => {
 		// 	}),
 		// 	userId: guestId,
 		// });
+
+		// console.log(files);
 
 		await fs.writeFiles(files.map(f => {
 			return {

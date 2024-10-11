@@ -57,7 +57,7 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
       <TouchHandler onSwipeLeft={onSwipeLeft} onSwipeRight={onSwipeRight}>
         <div className="media-viewer-content">
           <button className="close-btn" onClick={onClose}>&times;</button>
-          <MediaRenderer mediaUrl={mediaUrl} />
+          <MediaRenderer mediaUrl={mediaUrl || hdPhotoUrl} />
           {(mediaUrl && (hdPhotoUrl || photographerName)) && (
             <PhotoInfo
               photographerName={photographerName}

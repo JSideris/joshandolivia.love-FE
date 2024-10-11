@@ -424,7 +424,7 @@ export class UploadPipe{
 				thumbnail: null,
 				compressed: null,
 				name: datum.file.name,
-				path: datum.path.substring(1),
+				path: (datum.path).substring(1),
 				isUploaded: false,
 				error: false,
 

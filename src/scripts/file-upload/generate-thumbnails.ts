@@ -1,8 +1,10 @@
+import heic2any from 'heic2any';
+
 type Job = {
 	resolve: (value: WorkerOutput | null) => void;
 	reject: (reason?: any) => void;
 	data: {
-		file: File;
+		file: File | Blob;
 		thumbnailSize: number;
 	};
 };
@@ -57,6 +59,21 @@ function processNextJob() {
 	}
 }
 
+// Function to convert HEIC to PNG using heic2any in the main thread
+async function convertHeicToPng(heicFile: File): Promise<Blob> {
+	try {
+		const convertedBlob = await heic2any({
+			blob: heicFile,
+			toType: 'image/png'
+		});
+		console.log(convertedBlob);
+		return convertedBlob as Blob;
+	} catch (error) {
+		console.log('Error converting HEIC to PNG:', error);
+		throw new Error('Failed to convert HEIC file to PNG');
+	}
+}
+
 export default async function generateThumbnails(file: File, thumbnailSize = 256): Promise<WorkerOutput | null> {
 	if (!file) {
 		console.error("Unable to generate thumbnails. No file provided.");
@@ -70,11 +87,27 @@ export default async function generateThumbnails(file: File, thumbnailSize = 256
 		}
 	}
 
+	// Detect HEIC and convert if necessary
+	let processedFile: File | Blob = file;
+	const fileType = file.type;
+
+	console.log(fileType);
+
+	if (fileType === 'image/heic' || fileType === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+		try {
+			// Convert the HEIC file to PNG
+			processedFile = await convertHeicToPng(file);
+		} catch (error) {
+			console.error("Error converting HEIC:", error);
+			return null;
+		}
+	}
+
 	return new Promise<WorkerOutput>((resolve, reject) => {
 		const job: Job = {
 			resolve,
 			reject,
-			data: { file, thumbnailSize}
+			data: { file: processedFile, thumbnailSize }
 		};
 
 		if (currentJob) {
