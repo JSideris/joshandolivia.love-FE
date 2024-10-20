@@ -48,8 +48,9 @@ const Upload: React.FC = () => {
 
 	// Photo viewer:
 	const [isViewerOpen, setIsViewerOpen] = useState(false);
+	const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
 	const [mediaUrl, setMediaUrl] = useState<string | null>(null);
-	const [nextMediaUrl, setNextMediaUrl] = useState<string | null>(null);
+	// const [nextMediaUrl, setNextMediaUrl] = useState<string | null>(null);
 	const [photographerName, setPhotographerName] = useState<string | null>(null);
 	const [hdMediaPath, setHdMediaPath] = useState<string | null>(null);
 
@@ -251,14 +252,19 @@ const Upload: React.FC = () => {
 
 		if(imageFileTypes.indexOf(fileName.toLowerCase().split(".").pop()) != -1 
 			|| videoFileFormats.indexOf(fileName.toLowerCase().split(".").pop()) != -1){
-			loadMedia(fileRecord.path, null);
+			loadMedia(fileRecord.path);
 		}
 	};
 
-	const loadMedia = (path: string, nextPath: string) => {
+	const loadMedia = (path: string) => {
 		let fullPath = null;
 		let fullHdPath = `${CLOUDFRONT_URL}/uploads${path}`;
-		let nextFullPath = null;
+		// let nextFullPath = null;
+
+		let nextIndex = files.findIndex((f) => f.path === path);
+		if(nextIndex != -1){
+			setSelectedMediaIndex(nextIndex);
+		}
 
 		if(imageFileTypes.indexOf(path.toLocaleLowerCase().split(".").pop()) != -1){
 			let parts = path.split("/");
@@ -271,19 +277,19 @@ const Upload: React.FC = () => {
 			setHdMediaPath(null);
 		}
 
-		if(nextPath){
-			if(imageFileTypes.indexOf(nextPath.toLocaleLowerCase().split(".").pop()) != -1){
-				let parts = nextPath.split("/");
-				parts[2] = "compressed";
-				nextFullPath = `${CLOUDFRONT_URL}/uploads${parts.join("/")}`;
-			}
-			else{
-				nextFullPath = `${CLOUDFRONT_URL}/uploads${path}`;
-			}
-		}
+		// if(nextPath){
+		// 	if(imageFileTypes.indexOf(nextPath.toLocaleLowerCase().split(".").pop()) != -1){
+		// 		let parts = nextPath.split("/");
+		// 		parts[2] = "compressed";
+		// 		nextFullPath = `${CLOUDFRONT_URL}/uploads${parts.join("/")}`;
+		// 	}
+		// 	else{
+		// 		nextFullPath = `${CLOUDFRONT_URL}/uploads${path}`;
+		// 	}
+		// }
 
 		setMediaUrl(fullPath);
-		setNextMediaUrl(nextFullPath);
+		// setNextMediaUrl(nextFullPath);
 		setPhotographerName(UPLOAD_IDS[path.split("/")[1]]);
 		setIsViewerOpen(true);
 		document.body.classList.add('no-scroll');
@@ -315,7 +321,7 @@ const Upload: React.FC = () => {
 				let newPath = files[currentIndex - 1].path;
 				setSelectedItem({ type: 'file', path: newPath });
 				if(isViewerOpen){
-					loadMedia(newPath, null);
+					loadMedia(newPath);
 				}
 			}
 
@@ -340,7 +346,7 @@ const Upload: React.FC = () => {
 			}
 			
 			if(newPath && isViewerOpen){
-				loadMedia(newPath, nextNewPath);
+				loadMedia(newPath);
 			}
 		}
 		
@@ -593,18 +599,14 @@ const Upload: React.FC = () => {
 					{!files.length && !directories.length && <div className="empty-folder-message">Folder is empty. To upload files, drag and drop them onto the web page, or click the upload to cloud button above.</div>}
 					<MediaViewer
 						isOpen={isViewerOpen}
-						mediaUrl={mediaUrl}
-						nextMediaUrl={nextMediaUrl}
+						mediaData={files}
+						mediaIndex={selectedMediaIndex}
 						photographerName={photographerName}
 						hdPhotoUrl={hdMediaPath}
 						onClose={closePhotoViewer} 
 						onSwipeLeft={selectNext}
 						onSwipeRight={selectPrev}
 						/>
-					{/* <VideoViewer
-						isOpen={isVideoViewerOpen}
-						videoUrl={videoUrl}
-						onClose={closeVideoViewer} /> */}
 					<ProgressBar
 						totalFiles={totalFiles}
 						completedThumbnails={completedThumbnails}

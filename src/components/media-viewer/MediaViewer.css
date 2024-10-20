@@ -11,6 +11,7 @@
 	justify-content: center;
 	z-index: 9999;
 	overflow: hidden; /* Prevent overflow on the entire viewer */
+	backdrop-filter: blur(3px);
 }
   
 /* The content container for the media (photo or video) and close button */
@@ -34,4 +35,15 @@
 	border: none;
 	color: white;
 	cursor: pointer;
+	z-index: 3000;
+}
+
+.track-container{
+	overflow-x: hidden;
+	height: 100%;
+}
+.track{
+	display: flex;
+	flex-direction: row;
+	height: 100%;
 }

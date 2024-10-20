@@ -4,10 +4,11 @@ import { imageFileTypes, videoFileFormats } from '../../../scripts/constants';
 
 interface MediaRendererProps {
   mediaUrl: string;
+  render: boolean;
 }
 
-const MediaRenderer: React.FC<MediaRendererProps> = ({ mediaUrl }) => {
-  const [scale, setScale] = useState<number>(1); // Scale starts at 1
+const MediaRenderer: React.FC<MediaRendererProps> = ({ mediaUrl, render }) => {
+  const [scale, setScale] = useState<number>(3); // Scale starts at 1
   const [initialDistance, setInitialDistance] = useState<number | null>(null);
 
   const isImage = imageFileTypes.some((ext) => mediaUrl.toLowerCase().endsWith(ext));
@@ -45,10 +46,13 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({ mediaUrl }) => {
     setInitialDistance(null); // Reset initial distance when the touch ends
   };
 
+  if (!render) return <div className="spacer"></div>;
   if (isImage) {
     return (
+      <div className="spacer">
       <img
         src={mediaUrl}
+        loading="eager"
         alt="Full View"
         className="media-viewer-image"
         style={{ transform: `scale(${scale})` }}
@@ -57,23 +61,26 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({ mediaUrl }) => {
         onTouchEnd={handleTouchEnd}
 		onClick={e=>e.stopPropagation()}
       />
+      </div>
     );
   }
 
   if (isVideo) {
     return (
-      <video
-        controls
-        className="media-viewer-video"
-        style={{ transform: `scale(${scale})` }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-		onClick={e=>e.stopPropagation()}
-      >
-        <source src={mediaUrl} type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
+      <div className="spacer">
+        <video
+          controls
+          className="media-viewer-video"
+          style={{ transform: `scale(${scale})` }}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+      onClick={e=>e.stopPropagation()}
+        >
+          <source src={mediaUrl} type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+      </div>
     );
   }
 

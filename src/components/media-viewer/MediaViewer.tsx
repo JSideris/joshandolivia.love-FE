@@ -1,16 +1,17 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import MediaRenderer from "./media-renderer/MediaRenderer";
 import PhotoInfo from "./photo-info/PhotoInfo";
 import TouchHandler from "./touch-handler/TouchHandler";
-import { imageFileTypes } from "../../scripts/constants";
+import { CLOUDFRONT_URL, imageFileTypes } from "../../scripts/constants";
 import './MediaViewer.css';
+import { IFileMetadata } from "../../scripts/filesystem/i-filesystem";
 
 interface MediaViewerProps {
   isOpen: boolean;
-  mediaUrl: string;
+  mediaData: IFileMetadata[];
+  mediaIndex: number;
   photographerName?: string;
   hdPhotoUrl?: string;
-  nextMediaUrl?: string;
   onClose: () => void;
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
@@ -18,20 +19,22 @@ interface MediaViewerProps {
 
 const MediaViewer: React.FC<MediaViewerProps> = ({
   isOpen,
-  mediaUrl,
+  mediaData: mediaUrls,
+  mediaIndex,
   photographerName,
   hdPhotoUrl,
-  nextMediaUrl,
   onClose,
   onSwipeLeft,
   onSwipeRight,
 }) => {
+  const trackRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    if (nextMediaUrl && imageFileTypes.some((ext) => nextMediaUrl.endsWith(ext))) {
-      const img = new Image();
-      img.src = nextMediaUrl;
+    if (trackRef.current) {
+      trackRef.current.style.transform = `translateX(-${mediaIndex * 100}%)`;
+      trackRef.current.style.transition = 'transform 100ms ease-in-out';
     }
-  }, [nextMediaUrl]);
+  }, [mediaIndex, isOpen]);
 
   const handleDownload = async () => {
     try {
@@ -53,12 +56,20 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="media-viewer-overlay" onClick={onClose}>
+    <div className={`media-viewer-overlay${isOpen && " visible" || ""}`} onClick={onClose}>
       <TouchHandler onSwipeLeft={onSwipeLeft} onSwipeRight={onSwipeRight}>
         <div className="media-viewer-content">
           <button className="close-btn" onClick={onClose}>&times;</button>
-          <MediaRenderer mediaUrl={mediaUrl || hdPhotoUrl} />
-          {(mediaUrl && (hdPhotoUrl || photographerName)) && (
+          <div className="track-container">
+            <div className="track" ref={trackRef}>
+              {mediaUrls.map((m, i) => (
+                (m?.compressedPath || m?.path) && (
+                  <MediaRenderer key={i} mediaUrl={`${CLOUDFRONT_URL}/uploads${m.compressedPath || m.path}`} render={Math.abs(mediaIndex - i) <= 1} />
+                ) || <div key={i}>NO PREVIEW AVAILABLE</div>
+              ))}
+            </div>
+          </div>
+          {(hdPhotoUrl || photographerName) && (
             <PhotoInfo
               photographerName={photographerName}
               hdPhotoUrl={hdPhotoUrl}
