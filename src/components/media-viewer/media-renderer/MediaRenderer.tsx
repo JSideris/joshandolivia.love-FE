@@ -8,7 +8,7 @@ interface MediaRendererProps {
 }
 
 const MediaRenderer: React.FC<MediaRendererProps> = ({ mediaUrl, render }) => {
-  const [scale, setScale] = useState<number>(3); // Scale starts at 1
+  const [scale, setScale] = useState<number>(1); // Scale starts at 1
   const [initialDistance, setInitialDistance] = useState<number | null>(null);
 
   const isImage = imageFileTypes.some((ext) => mediaUrl.toLowerCase().endsWith(ext));
