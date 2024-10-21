@@ -45,9 +45,9 @@ const TouchHandler: React.FC<{ onSwipeLeft: () => void; onSwipeRight: () => void
 
 	return (
 		<div
-			onTouchStart={handleTouchStart}
-			onTouchMove={handleTouchMove}
-			onTouchEnd={handleTouchEnd}
+			// onTouchStart={handleTouchStart}
+			// onTouchMove={handleTouchMove}
+			// onTouchEnd={handleTouchEnd}
 		>
 			{children}
 		</div>

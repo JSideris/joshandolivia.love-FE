@@ -64,7 +64,13 @@ const MediaViewer: React.FC<MediaViewerProps> = ({
             <div className="track" ref={trackRef}>
               {mediaUrls.map((m, i) => (
                 (m?.compressedPath || m?.path) && (
-                  <MediaRenderer key={i} mediaUrl={`${CLOUDFRONT_URL}/uploads${m.compressedPath || m.path}`} render={Math.abs(mediaIndex - i) <= 1} />
+                  <MediaRenderer 
+                    key={i} 
+                    mediaUrl={`${CLOUDFRONT_URL}/uploads${m.compressedPath || m.path}`} 
+                    render={Math.abs(mediaIndex - i) <= 1} 
+                    onNext={onSwipeLeft}
+                    onPrev={onSwipeRight}
+                  />
                 ) || <div key={i}>NO PREVIEW AVAILABLE</div>
               ))}
             </div>

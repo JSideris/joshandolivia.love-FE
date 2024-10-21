@@ -15,6 +15,7 @@ const FileIcon: React.FC<FileIconProps> = ({
   iconUrl, label, size = 100, onSelect, onKeyPress, onDoubleClick, selected = false
 }) => {
   const [isSelected, setIsSelected] = useState<boolean>(selected);
+  const [lastTap, setLastTap] = useState<number>(0);
   const iconRef = useRef<HTMLDivElement | null>(null);  // Use ref to track the current component
 
   const handleIconDoubleClick = () => {
@@ -24,10 +25,20 @@ const FileIcon: React.FC<FileIconProps> = ({
   };
 
   const handleIconClick = () => {
-    setIsSelected(true);
-    if (onSelect) {
-      onSelect(label);
+    
+    const currentTime = new Date().getTime();
+    const tapLength = currentTime - lastTap;
+    if (tapLength < 300 && tapLength > 0) {
+      handleIconDoubleClick();
     }
+    else{
+    
+      setIsSelected(true);
+      if (onSelect) {
+        onSelect(label);
+      }
+    }
+    setLastTap(currentTime);
   };
 
   const handleClickOutside = (e: MouseEvent) => {
@@ -66,7 +77,6 @@ const FileIcon: React.FC<FileIconProps> = ({
       className={`file-icon ${isSelected ? 'selected' : ''}`} 
       style={{ width: size, height: size + 40 }} 
       onClick={handleIconClick}
-      onDoubleClick={handleIconDoubleClick}
     >
       <img src={iconUrl} style={{ width: size, height: size }} />
       <div className="file-label">
