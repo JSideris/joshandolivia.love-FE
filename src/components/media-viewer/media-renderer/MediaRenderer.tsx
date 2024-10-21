@@ -62,6 +62,7 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({ mediaUrl, render, onNext,
   const handleTouchEnd = () => {
     setInitialDistance(null); // Reset initial distance when the touch ends
     initialTouchPositionRef.current = null;
+    applyBoundaryCorrection();
     startMomentumCorrection();
   };
 
@@ -161,17 +162,20 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({ mediaUrl, render, onNext,
         correctedY = 0;
       }
 
-      console.log(dx);
+      // console.log(dx);
 
-      if(dx > 100){
+      const threshold = 50;
+
+      if(dx > threshold){
         setTranslation({ x: 0, y: 0 });
+        setScale(1);
 
         // Next image.
         onNext();
-        console.log("next");
       }
-      else if(dx < -100){
+      else if(dx < -threshold){
         setTranslation({ x: 0, y: 0 });
+        setScale(1);
         
         // Previous image.
         onPrev();
