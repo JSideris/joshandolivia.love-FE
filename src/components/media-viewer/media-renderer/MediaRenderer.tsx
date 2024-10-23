@@ -11,12 +11,14 @@ interface MediaRendererProps {
 
 const MediaRenderer: React.FC<MediaRendererProps> = ({ mediaUrl, render, onNext, onPrev }) => {
   const [scale, setScale] = useState<number>(1);
-  const [initialDistance, setInitialDistance] = useState<number | null>(null);
+  // const [initialDistance, setInitialDistance] = useState<number | null>(null);
   const [translation, setTranslation] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const initialTouchPositionRef = useRef<{ x: number; y: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement | HTMLVideoElement | null>(null);
   const momentumCorrectionRef = useRef<number | null>(null);
+
+  const initialTouchPositionRef = useRef<{ x: number; y: number } | null>(null);
+  const previousDistance = useRef<number>(0);
 
   const isImage = imageFileTypes.some((ext) => mediaUrl.toLowerCase().endsWith(ext));
   const isVideo = videoFileFormats.some((ext) => mediaUrl.toLowerCase().endsWith(ext));
@@ -37,19 +39,30 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({ mediaUrl, render, onNext,
     }
     if (e.touches.length === 2) {
       const distance = calculateDistance(e.touches);
-      setInitialDistance(distance);
-    } else if (e.touches.length === 1) {
-      initialTouchPositionRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      previousDistance.current = distance;
+      // setInitialDistance(distance);
+    } 
+    if (e.touches.length >= 1) {
+      // initialTouchPositionRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      initialTouchPositionRef.current = { 
+        x: Array.from(e.touches).reduce((acc, touch) => acc + touch.clientX, 0) / e.touches.length, 
+        y: Array.from(e.touches).reduce((acc, touch) => acc + touch.clientY, 0) / e.touches.length 
+      };
     }
   };
 
   // Handle touch move (pinch or drag gesture)
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (e.touches.length === 2 && initialDistance !== null) {
+    if (e.touches.length === 2) {
       const currentDistance = calculateDistance(e.touches);
-      const zoomFactor = currentDistance / initialDistance;
-      const newScale = Math.min(Math.max(1, zoomFactor), 4);
-      setScale(newScale);
+      const lastDistance = previousDistance.current;
+      const delta = currentDistance - lastDistance;
+      previousDistance.current = currentDistance;
+      // const zoomFactor = currentDistance / initialDistance;
+      // const newScale = Math.min(Math.max(1, zoomFactor), 4);
+      setScale(oldScale=>{
+        return Math.min(4, Math.max(1, oldScale + delta / window.innerWidth));
+      });
       e.preventDefault();
     } 
     
@@ -67,10 +80,11 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({ mediaUrl, render, onNext,
 
   // Handle touch end
   const handleTouchEnd = () => {
-    setInitialDistance(null); // Reset initial distance when the touch ends
+    // setInitialDistance(null); // Reset initial distance when the touch ends
     initialTouchPositionRef.current = null;
     applyBoundaryCorrection();
     startMomentumCorrection();
+    // isZooming.current = false;
   };
 
   // Handle mouse drag start
