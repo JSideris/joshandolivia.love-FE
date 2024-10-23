@@ -31,7 +31,7 @@ class IndexedDbFilesystem implements IFilesystem {
 				await this.createFileRecord(path, F.file.size, thumbPath, compressedPath);
 			}
 
-			progressHandler(this, progress);
+			progressHandler && progressHandler(this, progress);
 		});
 		this.uploadPipe.initialize();
 	}
@@ -199,6 +199,27 @@ class IndexedDbFilesystem implements IFilesystem {
 					) {
 						results.push(file);
 					}
+					cursor.continue();
+				} else {
+					resolve(results);
+				}
+			};
+			request.onerror = () => reject(request.error);
+		});
+	}
+
+	async listAllFiles(): Promise<IFileMetadata[]> {
+		const db = await this.openDB();
+		return new Promise((resolve, reject) => {
+			const transaction = db.transaction(this.storeName, 'readonly');
+			const store = transaction.objectStore(this.storeName);
+			const request = store.openCursor();
+			const results: IFileMetadata[] = [];
+			request.onsuccess = (event) => {
+				const cursor = event.target["result"];
+				if (cursor) {
+					const file = cursor.value as IFileMetadata;
+					results.push(file);
 					cursor.continue();
 				} else {
 					resolve(results);

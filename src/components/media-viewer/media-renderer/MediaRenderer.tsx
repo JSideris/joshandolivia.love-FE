@@ -61,7 +61,7 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({ mediaUrl, render, onNext,
       // const zoomFactor = currentDistance / initialDistance;
       // const newScale = Math.min(Math.max(1, zoomFactor), 4);
       setScale(oldScale=>{
-        return Math.min(4, Math.max(1, oldScale + delta / window.innerWidth));
+        return Math.min(4, Math.max(0.5, oldScale + 5*delta / window.innerWidth));
       });
       e.preventDefault();
     } 
