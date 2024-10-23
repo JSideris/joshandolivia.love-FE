@@ -48,13 +48,20 @@ const MediaRenderer: React.FC<MediaRendererProps> = ({ mediaUrl, render, onNext,
     if (e.touches.length === 2 && initialDistance !== null) {
       const currentDistance = calculateDistance(e.touches);
       const zoomFactor = currentDistance / initialDistance;
-      const newScale = Math.min(Math.max(1, zoomFactor), 2); // Bound between 1 and 2
+      const newScale = Math.min(Math.max(1, zoomFactor), 4);
       setScale(newScale);
-    } else if (e.touches.length === 1 && initialTouchPositionRef.current) {
-      const deltaX = (e.touches[0].clientX - initialTouchPositionRef.current.x) / scale;
-      const deltaY = (e.touches[0].clientY - initialTouchPositionRef.current.y) / scale;
+      e.preventDefault();
+    } 
+    
+    if (e.touches.length >= 1 && initialTouchPositionRef.current) {
+      let avgX = Array.from(e.touches).reduce((acc, touch) => acc + touch.clientX, 0) / e.touches.length;
+      let avgY = Array.from(e.touches).reduce((acc, touch) => acc + touch.clientY, 0) / e.touches.length;
+
+      const deltaX = (avgX - initialTouchPositionRef.current.x) / scale;
+      const deltaY = (avgY - initialTouchPositionRef.current.y) / scale;
       setTranslation((prev) => ({ x: prev.x + deltaX, y: prev.y + deltaY }));
-      initialTouchPositionRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      initialTouchPositionRef.current = { x: avgX, y: avgY };
+      e.preventDefault();
     }
   };
 
